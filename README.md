@@ -20,6 +20,6 @@ If our work is valuable to you, please cite our work:
 @article{yang2023physics,
   title={Physics-Driven Spectrum-Consistent Federated Learning for Palmprint Verification},
   author={Yang, Ziyuan and Teoh, Andrew Beng Jin and Zhang, Bob and Leng, Lu and Zhang, Yi},
-  journal={arXiv preprint arXiv:2308.00451},
-  year={2023}
+  journal={International Journal of Computer Vision},
+  year={2024}
 }
