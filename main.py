@@ -3,9 +3,6 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"]= "TRUE"
 import argparse
 
-
-### This is for Original CompNet
-
 parser = argparse.ArgumentParser(
         description="PSFed-Palm"
     )
@@ -39,10 +36,6 @@ parser.add_argument("--save_path",type=str,default='./cross-db-checkpoint/PolyU_
 parser.add_argument("--seed",type=int,default=42)
 args = parser.parse_args()
 
-# print(args.gpu_id)
-# os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu_id
-
-
 
 import time
 import sys
@@ -58,9 +51,6 @@ import torchvision
 from torchvision import transforms
 from torchvision import models
 
-# print(torch.cuda.is_available())
-# print(os.getcwd())
-# import pickle
 import numpy as np
 from PIL import Image
 import cv2 as cv
@@ -155,30 +145,17 @@ def communication_sub(s_model, models):
 
 
 def test(model, gallery_file, query_file, path_rst):
-    # finished training
-    # torch.save(net.state_dict(), 'net_params.pth')
-    # torch.save(net, 'net.pkl')
 
-    # print('Finished Trainning')
-    # print('the best training acc is: ', bestacc, '%')
     print('Start Testing!')
     print('%s' % (time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())))
 
-    ### Calculate EER
-
-    # path_rst = './Tongji2others/Tongji2IITD/rst_test/'
-    # if not os.path.exists(path_rst):
-    #     os.makedirs(path_rst)
 
     path_hard = os.path.join(path_rst, 'rank1_hard')
-
-    # train_set_file = './data/train_IITD.txt'
-    # test_set_file = './data/test_IITD.txt'
-
+        
     trainset = MyDataset(txt=gallery_file, transforms=None, train=False)
     testset = MyDataset(txt=query_file, transforms=None, train=False)
 
-    batch_size = 512  # 128
+    batch_size = 512 
 
     data_loader_train = DataLoader(dataset=trainset, batch_size=batch_size, num_workers=2)
     data_loader_test = DataLoader(dataset=testset, batch_size=batch_size, num_workers=2)
@@ -441,11 +418,8 @@ def fit(epoch, model, data_loader, optimize=None, server_model=None, mode = 'fed
         loss3 = mu / 2. * w_diff
         
         loss2 = loss2 + loss3
-        # loss2 = loss3 
 
         loss = weight1*ce + weight2*ce2 + weight3 * ce3 + loss2
-        # loss = weight1*ce + weight2*ce2 + loss2
-        # loss = weight1*ce + weight2*ce2 + weight3 * ce3
 
         running_loss += loss.data.cpu().numpy()
         entro_loss += ce.data.cpu().numpy()
@@ -605,7 +579,6 @@ if __name__== "__main__" :
         if com % args.save_interval == 0:
             torch.save(server_model.state_dict(), des_path + 'com_' + str(com) + '_net_params.pth')
 
-        ###第一次也测一下 看看有没有bug
         if com % args.test_interval == 0 and com != 0:
             for source_id in range(4):
                 for target_id in range(4):
