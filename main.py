@@ -3,8 +3,11 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"]= "TRUE"
 import argparse
 
+
+### This is for Original CompNet
+
 parser = argparse.ArgumentParser(
-        description="PSFed-Palm"
+        description="CO3Net for Palmprint Recfognition"
     )
 
 parser.add_argument("--batch_size",type=int,default = 2048)
@@ -30,11 +33,17 @@ parser.add_argument("--train_set_file",type=str,default='./data/train_all_server
 parser.add_argument("--test_set_file",type=str,default='./data/test_server.txt')
 
 ##Store Path
-parser.add_argument("--des_path",type=str,default='/data/YZY/Palm_DOC/Tongji_add/checkpoint/')
-parser.add_argument("--path_rst",type=str,default='/data/YZY/Palm_DOC/Tongji_add/rst_test/')
+# parser.add_argument("--des_path",type=str,default='/data/YZY/Palm_DOC/Tongji_add/checkpoint/')
+# parser.add_argument("--path_rst",type=str,default='/data/YZY/Palm_DOC/Tongji_add/rst_test/')
+parser.add_argument("--des_path",type=str,default='./Tongji_add/checkpoint/')
+parser.add_argument("--path_rst",type=str,default='./Tongji_add/rst_test/')
 parser.add_argument("--save_path",type=str,default='./cross-db-checkpoint/PolyU_1')
 parser.add_argument("--seed",type=int,default=42)
 args = parser.parse_args()
+
+# print(args.gpu_id)
+# os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu_id
+
 
 
 import time
@@ -51,6 +60,9 @@ import torchvision
 from torchvision import transforms
 from torchvision import models
 
+# print(torch.cuda.is_available())
+# print(os.getcwd())
+# import pickle
 import numpy as np
 from PIL import Image
 import cv2 as cv
@@ -63,9 +75,8 @@ from utils.util import plotLossACC, saveLossACC, saveGaborFilters, saveParameter
 plt.switch_backend('agg')
 
 from models import MyDataset
-# from models.compnet_original import compnet
-# from models.co3 import compnet2 as co3net
-from models import ccnet
+from models.compnet_original import compnet
+from models.co3 import compnet2 as co3net
 from utils import *
 
 import copy
@@ -145,17 +156,30 @@ def communication_sub(s_model, models):
 
 
 def test(model, gallery_file, query_file, path_rst):
+    # finished training
+    # torch.save(net.state_dict(), 'net_params.pth')
+    # torch.save(net, 'net.pkl')
 
+    # print('Finished Trainning')
+    # print('the best training acc is: ', bestacc, '%')
     print('Start Testing!')
     print('%s' % (time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())))
 
+    ### Calculate EER
+
+    # path_rst = './Tongji2others/Tongji2IITD/rst_test/'
+    # if not os.path.exists(path_rst):
+    #     os.makedirs(path_rst)
 
     path_hard = os.path.join(path_rst, 'rank1_hard')
-        
+
+    # train_set_file = './data/train_IITD.txt'
+    # test_set_file = './data/test_IITD.txt'
+
     trainset = MyDataset(txt=gallery_file, transforms=None, train=False)
     testset = MyDataset(txt=query_file, transforms=None, train=False)
 
-    batch_size = 512 
+    batch_size = 512  # 128
 
     data_loader_train = DataLoader(dataset=trainset, batch_size=batch_size, num_workers=2)
     data_loader_test = DataLoader(dataset=testset, batch_size=batch_size, num_workers=2)
@@ -418,8 +442,11 @@ def fit(epoch, model, data_loader, optimize=None, server_model=None, mode = 'fed
         loss3 = mu / 2. * w_diff
         
         loss2 = loss2 + loss3
+        # loss2 = loss3 
 
         loss = weight1*ce + weight2*ce2 + weight3 * ce3 + loss2
+        # loss = weight1*ce + weight2*ce2 + loss2
+        # loss = weight1*ce + weight2*ce2 + weight3 * ce3
 
         running_loss += loss.data.cpu().numpy()
         entro_loss += ce.data.cpu().numpy()
@@ -452,11 +479,22 @@ def fit(epoch, model, data_loader, optimize=None, server_model=None, mode = 'fed
 
 def Dataset():
 
-    src_dataset_1 = DataLoader(MyDataset(txt='./data/train_MSRed.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
-    src_dataset_2 = DataLoader(MyDataset(txt='./data/train_MSGreen.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
-    src_dataset_3 = DataLoader(MyDataset(txt='./data/train_MSBLUE.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
-    src_dataset_4 = DataLoader(MyDataset(txt='./data/train_MSNIR.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
-    
+    # src_dataset_1 = DataLoader(MyDataset(txt='./data/train_MSRed.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    # src_dataset_2 = DataLoader(MyDataset(txt='./data/train_MSGreen.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    # src_dataset_3 = DataLoader(MyDataset(txt='./data/train_MSBLUE.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    # src_dataset_4 = DataLoader(MyDataset(txt='./data/train_MSNIR.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+ 
+    src_dataset_1 = DataLoader(MyDataset(txt='./data/train_MSRED_2_10.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    src_dataset_2 = DataLoader(MyDataset(txt='./data/train_MSGreen_2_10.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    src_dataset_3 = DataLoader(MyDataset(txt='./data/train_MSBLUE_2_10.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    src_dataset_4 = DataLoader(MyDataset(txt='./data/train_MSNIR_2_10.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+
+    # src_dataset_1 = DataLoader(MyDataset(txt='./data/casia_mul/train_CASIA_MUL_850_2.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    # src_dataset_2 = DataLoader(MyDataset(txt='./data/casia_mul/train_CASIA_MUL_460_2.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    # src_dataset_3 = DataLoader(MyDataset(txt='./data/casia_mul/train_CASIA_MUL_630_2.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+    # src_dataset_4 = DataLoader(MyDataset(txt='./data/casia_mul/train_CASIA_MUL_940_2.txt', transforms=None, train=True, imside=128, outchannels=1), batch_size=batch_size, num_workers=2, shuffle=True)
+
+
     dataloaders = []
     dataloaders.append(src_dataset_1)
     dataloaders.append(src_dataset_2)
@@ -490,8 +528,16 @@ if __name__== "__main__" :
     # path
     # train_set_file = args.train_set_file
     # test_set_file = args.test_set_file
-    train_set_files = ['./data/train_MSRed.txt','./data/train_MSGreen.txt' ,'./data/train_MSBLUE.txt','./data/train_MSNIR.txt']
-    test_set_files = ['./data/test_MSRed.txt','./data/test_MSGreen.txt' ,'./data/test_MSBLUE.txt','./data/test_MSNIR.txt']
+    # train_set_files = ['./data/train_MSRed.txt','./data/train_MSGreen.txt' ,'./data/train_MSBLUE.txt','./data/train_MSNIR.txt']
+    # test_set_files = ['./data/test_MSRed.txt','./data/test_MSGreen.txt' ,'./data/test_MSBLUE.txt','./data/test_MSNIR.txt']
+
+    train_set_files = ['./data/train_MSRED_2_10.txt','./data/train_MSGreen_2_10.txt' ,'./data/train_MSBLUE_2_10.txt','./data/train_MSNIR_2_10.txt']
+    test_set_files = ['./data/test_MSRED_2_10.txt','./data/test_MSGreen_2_10.txt' ,'./data/test_MSBLUE_2_10.txt','./data/test_MSNIR_2_10.txt']
+
+    # train_set_files = ['./data/casia_mul/train_CASIA_MUL_850_2.txt', './data/casia_mul/train_CASIA_MUL_460_2.txt','./data/casia_mul/train_CASIA_MUL_630_2.txt','./data/casia_mul/train_CASIA_MUL_940_2.txt']
+    # test_set_files = ['./data/casia_mul/test_CASIA_MUL_850_2.txt', './data/casia_mul/test_CASIA_MUL_460_2.txt','./data/casia_mul/test_CASIA_MUL_630_2.txt','./data/casia_mul/test_CASIA_MUL_940_2.txt']
+
+
 
     names = ['red','green','blue','nir']
     
@@ -503,11 +549,11 @@ if __name__== "__main__" :
     print('%s' % (time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())))
 
     train_datas = Dataset()
-    server_model = ccnet(num_classes=num_classes).cuda()
-    best_net = ccnet(num_classes=num_classes).cuda()
+    server_model = co3net(num_classes=num_classes).cuda()
+    best_net = co3net(num_classes=num_classes).cuda()
 
-    visib_net = ccnet(num_classes=num_classes).cuda()   ### Green & Blue
-    invis_net = ccnet(num_classes=num_classes).cuda() 
+    visib_net = co3net(num_classes=num_classes).cuda()   ### Green & Blue
+    invis_net = co3net(num_classes=num_classes).cuda() 
 
     models = [copy.deepcopy(server_model) for idx in range(4)]
     optimizers = [torch.optim.Adam(models[idx].parameters(), lr=args.lr) for idx in range(4)]
@@ -516,6 +562,9 @@ if __name__== "__main__" :
     #
     criterion = nn.CrossEntropyLoss()
     con_criterion = SupConLoss(temperature=args.temp, base_temperature=args.temp)
+
+    # optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    # scheduler = lr_scheduler.StepLR(optimizer, step_size=args.redstep, gamma=0.8)
 
     train_losses, train_accuracy = [], []
     val_losses, val_accuracy = [], []
@@ -579,6 +628,7 @@ if __name__== "__main__" :
         if com % args.save_interval == 0:
             torch.save(server_model.state_dict(), des_path + 'com_' + str(com) + '_net_params.pth')
 
+
         if com % args.test_interval == 0 and com != 0:
             for source_id in range(4):
                 for target_id in range(4):
@@ -586,3 +636,19 @@ if __name__== "__main__" :
                     path_rst = args.path_rst + names[source_id] + '2' + names[target_id] + '_best/'
                     test(server_model,train_set_files[source_id],test_set_files[target_id], path_rst)
 
+
+    print('------------\n')
+    # print('Last')
+    # for source_id in range(4):
+    #     for target_id in range(4):
+    #         print(names[source_id],'->',names[target_id])
+    #         path_rst = args.path_rst + names[source_id] + '2' + names[target_id]  + '_best/'
+    #         test(server_model,train_set_files[source_id],test_set_files[target_id],path_rst)
+
+    print('------------\n')
+    print('Best')
+    for source_id in range(4):
+        for target_id in range(4):
+            print(names[source_id],'->',names[target_id])
+            path_rst = args.path_rst + names[source_id] + '2' + names[target_id] + '_best/'
+            test(best_net,train_set_files[source_id],test_set_files[target_id],path_rst)
